@@ -1,0 +1,17 @@
+{
+    "name": "VTFLib",
+    "version": "0.0.1",
+    "author": "The Jamesernator",
+    "description": "This is for packing and unpacking VTF data",
+    "dependencies": {
+        "jpeg-js": "latest",
+        "dxt-js": "latest",
+        "level-fs-browser": "latest"
+    },
+    "devDependencies": {
+        "browserify": "latest"
+    },
+    "browser": {
+        "fs": "level-fs-browser"
+    }
+}
