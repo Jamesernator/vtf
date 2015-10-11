@@ -5,7 +5,7 @@ jpg = require('jpeg-js')
 dxt = require('dxt-js')
 async = require('./async.coffee')
 struct = require('bufferpack')
-{ImageFormats, TextureFlags} = require('./formats.coffee')
+{VTFImageFormats, TextureFlags} = require('./formats.coffee')
 
 VTF_HEADER_FORMAT = "<4s(signature)
                      I(version1)
@@ -59,6 +59,19 @@ read_dir = (path) ->
             else
                 resolve(files)
 
+class Frame
+    constructor: (raw_rgba) ->
+
+    @from: (format, raw_image_buffer) ->
+
+
+class Frames
+    constructor: (@frames) ->
+        ### frames should be an iterable (NOT an iterator) ###
+
+    to_packed: ()
+
+
 
 class VTFFile
     constructor: (@header, @mipmaps, @low_res_image_data, @other_data=null) ->
@@ -70,7 +83,7 @@ class VTFFile
         low_res_image_data = @get_low_res_image_data(header, raw_data)
 
         front_bytes = header.headerSize + low_res_image_data.length
-        
+
 
     @get_header: (vpk_data) ->
         ### This reads a vtf header and returns the fields ###
@@ -116,7 +129,7 @@ class VTFFile
         ###
         {height, width} = header
 
-        format = ImageFormats[header.highResImageFormat]
+        format = VTFImageFormats[header.highResImageFormat]
         bytes_per_pixel = format.total_bits / 8
         for i in [0...header.mipmapCount]
             bytes = (width / (2**i)) * (height / (2**i)) * bytes_per_pixel

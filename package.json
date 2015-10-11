@@ -6,12 +6,17 @@
     "dependencies": {
         "jpeg-js": "latest",
         "dxt-js": "latest",
-        "level-fs-browser": "latest"
+        "level-fs-browser": "latest",
+        "bufferpack": "latest"
     },
     "devDependencies": {
-        "browserify": "latest"
+        "browserify": "latest",
+        "coffeeify": "latest"
     },
     "browser": {
         "fs": "level-fs-browser"
+    },
+    "scripts": {
+        "build-js": "browserify -t coffeeify vtf_reader.coffee > vtf_bundle.js"
     }
 }
