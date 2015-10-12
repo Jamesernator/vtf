@@ -55,4 +55,4 @@ module.exports.main = (func) ->
         try
             yield async(func)()
         catch err
-            console.log err
+            console.log err.stack

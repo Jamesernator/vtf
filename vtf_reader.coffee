@@ -3,9 +3,19 @@
 fs = require('fs')
 jpg = require('jpeg-js')
 dxt = require('dxt-js')
-async = require('./async.coffee')
 struct = require('bufferpack')
-{VTFImageFormats, TextureFlags} = require('./formats.coffee')
+color = require('onecolor')
+
+async = require('./async.coffee')
+formats = require('./formats.coffee')
+
+Function::get = (prop, get) ->
+    Object.defineProperty @prototype, prop, {get, configurable: yes}
+
+Function::set = (prop, set) ->
+    Object.defineProperty @prototype, prop, {set, configurable: yes}
+
+{VTFImageFormats, TextureFlags, GeneralImageFormats} = 'formats'
 
 VTF_HEADER_FORMAT = "<4s(signature)
                      I(version1)
@@ -59,31 +69,114 @@ read_dir = (path) ->
             else
                 resolve(files)
 
-class Frame
-    constructor: (raw_rgba) ->
+class Color
+    ### This is a wrapper around the onecolor library exposing just one
+        method toRGBA which gives a Uint8Array of 4 bytes
+    ###
+    @RGBA_ARRAY = [
+        new Color([255, 0, 0, 255])
+        new Color([0, 255, 0, 255])
+        new Color([0, 0, 255, 255])
+        new Color([0, 0, 0, 0])
+    ]
+    constructor: (data) ->
+        @color = new color(data)
 
-    @from: (format, raw_image_buffer) ->
+    toRGBA: ->
+        vals = @color.toJSON()[1...].map (val) -> val*255
+        return new Uint8Array(vals)
+
+
+class Image
+    ### An image is an iterator of pixels and additionally has
+        a width and height, a pixel is a Uint8Array with 4 values:
+        Uint8Array[red, green, blue, alpha]
+    ###
+    constructor: (@width, @height, iterator) ->
+        @[Symbol.iterator] = iterator
+
+    @get 'data', ->
+        data = new Uint8Array(@width*@height*4)
+        pixel_iterator = @[Symbol.iterator]()
+
+        index = 0
+        while true
+            {value: pixel, done} = pixel_iterator.next()
+            if done
+                break
+            data.set(pixel, index)
+            index += 4
+        return data
+
+    @from: ({width, height, data: rgba_data}) ->
+        ### data must be rgba data of the form of a slice-supporting
+            array that
+        ###
+        iterator = ->
+            for start in [0...width*height*4] by 4
+                yield rgba_data[start...start + 4]
+        return new Image(width, height, iterator)
+
+
+class Squares extends Image
+    constructor: (@width, @height, colors=Color.RGBA_ARRAY) ->
+        @[Symbol.iterator] = ->
+            array = new Uint8Array(@width*@height*4) # 4 colors per pixel
+            for _ in [0...@height/2]
+                yield from @row(colors[0...2])
+            for _ in [0...@height/2]
+                yield from @row(colors[2...4])
+
+    row: (colors) ->
+        for _ in [0...@width/2]
+            yield colors[0].toRGBA()
+        for _ in [0...@width/2]
+            yield colors[1].toRGBA()
 
 
 class Frames
-    constructor: (@frames) ->
-        ### frames should be an iterable (NOT an iterator) ###
+    ### Frames is an iterable of Images with a consistent width and height ###
+    constructor: (@width, @height, iterator) ->
+        @[Symbol.iterator] = iterator
 
-    to_packed: ()
+    @get 'data', ->
+        ### This is the binary packed pixel data of the Frames ###
+        result = new Uint8Array(frames.length*@width*@height*4)
 
+        frames = Array.from this
+
+        current = 0
+        for frame in frames
+            result.set frame.data, current
+            current += frame.data.length
+        return result
+
+    @get 'length', ->
+        ### This is the number of frames ###
+        return Array.from(this).length
+
+    @from: (frames_list) ->
+        ### Given a list of frames this creates a frame object
+        ###
+        width = frames_list[0].width
+        height = frames_list[1].height
+        frames_equal = frames_list.every (frame) ->
+            frame.width is width and frame.height is height
+        unless frames_equal
+            throw new Error('Frames not same size')
+        iterator = ->
+            for frame in frames_list
+                yield frame
+        return new Frames width, height, iterator
 
 
 class VTFFile
     constructor: (@header, @mipmaps, @low_res_image_data, @other_data=null) ->
 
-
     @from: (raw_data) ->
         header = @get_header(raw_data)
         mipmaps = @get_frames(header, raw_data)
         low_res_image_data = @get_low_res_image_data(header, raw_data)
-
-        front_bytes = header.headerSize + low_res_image_data.length
-
 
     @get_header: (vpk_data) ->
         ### This reads a vtf header and returns the fields ###
@@ -139,65 +232,23 @@ class VTFFile
             else
                 yield bytes
 
-    boundaries: (width, height, mipmap_no) ->
-        ### Returns an offset from the end of the raw_data for where a given
-            mipmap is located given the largest mipmap is of size width x height
-        ###
-        offset_start = width*height
-        offset_end = 0
-
-        if mipmap_no is 0
-            return [offset_start, offset_end]
-
-        for _no in [1..mipmap_no]
-            width = width/2
-            height = height/2
-            offset_end = offset_start
-            offset_start = offset_end + width * height
-        return [offset_start, offset_end]
-
-    frames: ->
-        ### Yields a series of frames from the VTF raw_data ###
-        for mipmap_no in [0...@header.mipmapCount]
-            width = @header.width/(2**mipmap_no)
-            height = @header.width/(2**mipmap_no)
-
-            [offset_start, offset_end] = @boundaries(
-                @header.width,
-                @header.height,
-                mipmap_no
-            )
-
-            start = @raw_data.length - offset_start
-            end = @raw_data.length - offset_end
-            raw_frame = @raw_data[start...end]
-
-            data = dxt.decompress raw_frame,
-                width, height,
-                dxt.flags.DXT5
-
-            yield {
-                width
-                height
-                data
-            }
-
 
 
 async.main ->
-    data = yield read_file('c_drg_cowmangler.vtf')
-    VTFFile.from(data)
-    ###
-    raw_img = dxt.decompress data[data.length-start...data.length-end],
-        real_size, real_size,
-        dxt.flags.DXT5
-    jpeg_raw =
-        data: raw_img
-        width: real_size
-        height: real_size
-    yield write_file('test.jpg', jpg.encode(jpeg_raw, 100).data)
-    #console.log data[80...235].toString('ascii')
-    ###
+    #data = yield read_file('c_drg_cowmangler.vtf')
+    #VTFFile.from(data)
+    #raw_img = dxt.decompress data[data.length-start...data.length-end],
+    #    real_size, real_size,
+    #    dxt.flags.DXT5
+    #jpeg_raw =
+    #    data: raw_img
+    #    width: real_size
+    #    height: real_size
+    #console.log jpeg_raw
+
+    #yield write_file('test.jpg', jpg.encode(jpeg_raw, 100).data)
+    yield write_file 'test.jpg', jpg.encode(new Squares(512, 512)).data
+    yield return
 
 window = this
 

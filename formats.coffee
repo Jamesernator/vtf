@@ -1,6 +1,7 @@
 "use strict"
 
 dxt = require('dxt-js')
+jpg = require('jpeg-js')
 
 ### All decoders return RGBA8888 byte arrays and
     similarly encoders expect RGBA8888, support is implied by the existence
@@ -19,17 +20,17 @@ exports.VTFImageFormats =
     0:
         name: 'RGBA8888'
         total_bits: 32
-        encode: ({width, height, rgba8888_data}) ->
+        encode: ({width, height, data}) ->
             return {
                 width,
                 height,
-                rgba8888_data
+                data
             }
-        decode: ({width, height, rgba8888_data}) ->
+        decode: ({width, height, data}) ->
             return {
                 width,
                 height,
-                rgba8888_data
+                data
             }
     1:
         name: 'ABGR8888'
@@ -70,43 +71,43 @@ exports.VTFImageFormats =
     13:
         name: 'DXT1'
         total_bits: 4
-        decode: ({width, height, dxt1_data}) ->
-            raw_frame = Uint8Array.from(dxt1_data)
+        decode: ({width, height, data}) ->
+            raw_frame = Uint8Array.from(data)
             return dxt.decompress raw_frame,
                 width, height,
                 dxt.flags.DXT1
-        encode: ({width, height, rgba8888_data}) ->
-            raw_frame = Uint8Array.from(rgba8888_data)
+        encode: ({width, height, data}) ->
+            raw_frame = Uint8Array.from(data)
             return dxt.compress raw_frame,
                 width, height,
                 dxt.flags.DXT1
     14:
         name: 'DXT3'
         total_bits: 8
-        decode: ({width, height, dxt3_data}) ->
+        decode: ({width, height, data}) ->
             # data should be a Uint8Array or Buffer, but we'll try converting
             # it to one anyway
-            raw_frame = Uint8Array.from(dxt3_data)
+            raw_frame = Uint8Array.from(data)
             return dxt.decompress raw_frame,
                 width, height,
                 dxt.flags.DXT3
-        encode: ({width, height, rgba8888_data}) ->
-            raw_frame = Uint8Array.from(rgba8888_data)
+        encode: ({width, height, data}) ->
+            raw_frame = Uint8Array.from(data)
             return dxt.compress raw_frame,
                 width, height,
                 dxt.flags.DXT3
     15:
         name: 'DXT5'
         total_bits: 8
-        decode: ({width, height, dxt5_data}) ->
+        decode: ({width, height, data}) ->
             # data should be a Uint8Array or Buffer, but we'll try converting
             # it to one anyway
-            raw_frame = Uint8Array.from(dxt5_data)
+            raw_frame = Uint8Array.from(data)
             return dxt.decompress raw_frame,
                 width, height,
                 dxt.flags.DXT3
-        encode: ({width, height, rgba8888_data}) ->
-            raw_frame = Uint8Array.from(rgba8888_data)
+        encode: ({width, height, data}) ->
+            raw_frame = Uint8Array.from(data)
             return dxt.compress raw_frame,
                 width, height,
                 dxt.flags.DXT5
@@ -148,11 +149,14 @@ exports.VTFImageFormats =
 ### All decoders return RBGA8888 data ####
 exports.GeneralImageFormats =
     'jpg':
-        'aliases': ["jpg", "jpeg"]
-        'decode':
-    'gif':
-        'aliases': ['gif']
+        'decode': (file_data) ->
+            return jpg.decode(file_data)
+        'encode': ({width, height, data}, quality=100) ->
+            return jpg.encode({width, height, data}, quality)
 
+exports.ImageAliasMap =
+    ### The right hand side represents the GeneralImageFormats name ###
+    'jpeg': 'jpg'
 
 
 exports.TextureFlags =
