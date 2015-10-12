@@ -219,6 +219,7 @@ async.main ->
 
     #yield write_file('test.jpg', jpg.encode(jpeg_raw, 100).data)
     yield pfs.writeFile 'test.jpg', jpg.encode(new Squares(512, 512), 100).data
+    
     yield return
 
 
