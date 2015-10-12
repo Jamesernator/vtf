@@ -14,7 +14,7 @@
         "coffeeify": "latest"
     },
     "browser": {
-        "fs": "level-fs-browser"
+        "fs": "browserify-fs"
     },
     "scripts": {
         "build-js": "browserify -t coffeeify vtf_reader.coffee > vtf_bundle.js"

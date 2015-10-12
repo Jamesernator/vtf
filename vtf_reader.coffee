@@ -1,13 +1,15 @@
 "use strict"
 
-fs = require('fs')
 jpg = require('jpeg-js')
 dxt = require('dxt-js')
 struct = require('bufferpack')
 color = require('onecolor')
 
+pfs = require('./promise_fs.coffee')
 async = require('./async.coffee')
 formats = require('./formats.coffee')
+
+{VTFImageFormats, TextureFlags, GeneralImageFormats} = 'formats'
 
 Function::get = (prop, get) ->
     Object.defineProperty @prototype, prop, {get, configurable: yes}
@@ -15,7 +17,7 @@ Function::get = (prop, get) ->
 Function::set = (prop, set) ->
     Object.defineProperty @prototype, prop, {set, configurable: yes}
 
-{VTFImageFormats, TextureFlags, GeneralImageFormats} = 'formats'
+
 
 VTF_HEADER_FORMAT = "<4s(signature)
                      I(version1)
@@ -37,37 +39,6 @@ VTF_HEADER_FORMAT = "<4s(signature)
                      B(lowResImageHeight)
                      H(depth)
                     "
-
-##----- Promise based file functions -------------------
-
-read_file = (path, encoding=null) ->
-    return new Promise (resolve, reject) ->
-        fs.readFile path, encoding, (err, data) ->
-            if err?
-                reject(err)
-            else
-                resolve(data)
-
-write_file = (path, data, opts=null) ->
-    return new Promise (resolve, reject) ->
-        fs.writeFile path, data, opts, (err) ->
-            if err?
-                reject()
-            else
-                resolve()
-
-file_exists = (path) ->
-    return new Promise (resolve, reject) ->
-        fs.exists path, (result) ->
-            resolve(result)
-
-read_dir = (path) ->
-    return new Promise (resolve, reject) ->
-        fs.readdir path, (err, files) ->
-            if err?
-                reject(err)
-            else
-                resolve(files)
 
 class Color
     ### This is a wrapper around the onecolor library exposing just one
@@ -247,10 +218,12 @@ async.main ->
     #console.log jpeg_raw
 
     #yield write_file('test.jpg', jpg.encode(jpeg_raw, 100).data)
-    yield write_file 'test.jpg', jpg.encode(new Squares(512, 512)).data
+    yield pfs.writeFile 'test.jpg', jpg.encode(new Squares(512, 512), 100).data
     yield return
 
-window = this
 
-window.fs = fs
-window.dxt = dxt
+root = window ? this
+root.dxt = dxt
+root.pfs = pfs
+root.jpg = jpg
+root.Squares = Squares
