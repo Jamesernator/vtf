@@ -4,7 +4,7 @@ struct = require('bufferpack')
 color = require('onecolor')
 
 formats = require('./formats.coffee')
-{ImageFormats, TextureFlags} = 'formats'
+{ImageFormats, TextureFlags, VTFImageFormats} = 'formats'
 
 ## --- CoffeeScript getter and setter -----
 
@@ -79,16 +79,24 @@ class Image
             index += 4
         return data
 
-    @from: ({width, height, data: rgba_data, format: null}) ->
+    @from: ({width, height, data, format}) ->
         ### data must be rgba data of the form of a slice-supporting
             array that
         ###
+        format ?= 'RGBA8888'
+
+        unless ImageFormats[format]?.decode?
+            throw new Error("No decoder for format: #{format}")
+        decoded = ImageFormats[format].decode({width, height, data}).data
+
         iterator = ->
             for start in [0...width*height*4] by 4
                 raw = rgba_data[start...start + 4]
                 if format?
 
         return new Image(width, height, iterator)
+
+
 
 class Frames
     ### Frames is an iterable of Images with a consistent width and height ###

@@ -3,9 +3,10 @@
 dxt = require('dxt-js')
 jpg = require('jpeg-js')
 
-### All decoders return RGBA8888 byte arrays and
-    similarly encoders expect RGBA8888, support is implied by the existence
-    of a decoder/encoder
+### All decoders return an object containing data, width and height
+    where width and height are number of pixels and data is an array-like
+    of RGBA8888 data
+    encoders expect the same objects as the decoders return
 
     total_bits is the total number of bits per pixel
 
@@ -118,42 +119,67 @@ exports.ImageFormats =
         total_bits: 4
         decode: ({width, height, data}) ->
             raw_frame = Uint8Array.from(data)
-            return dxt.decompress raw_frame,
-                width, height,
-                dxt.flags.DXT1
+            return {
+                data: dxt.decompress raw_frame,
+                        width, height,
+                        dxt.flags.DXT1
+                width: width
+                height: height
+            }
+
         encode: ({width, height, data}) ->
             raw_frame = Uint8Array.from(data)
-            return dxt.compress raw_frame,
-                width, height,
-                dxt.flags.DXT1
+            return {
+                data: dxt.compress raw_frame,
+                    width, height,
+                    dxt.flags.DXT1
+                width: width
+                height: height
+            }
     DXT3:
         total_bits: 8
         decode: ({width, height, data}) ->
             # data should be a Uint8Array or Buffer, but we'll try converting
             # it to one anyway
             raw_frame = Uint8Array.from(data)
-            return dxt.decompress raw_frame,
-                width, height,
-                dxt.flags.DXT3
+            return {
+                data: dxt.decompress raw_frame,
+                        width, height,
+                        dxt.flags.DXT3
+                width: width
+                height: height
+            }
         encode: ({width, height, data}) ->
             raw_frame = Uint8Array.from(data)
-            return dxt.compress raw_frame,
-                width, height,
-                dxt.flags.DXT3
+            return {
+                data: dxt.compress raw_frame,
+                        width, height,
+                        dxt.flags.DXT3
+                width: width
+                height: height
+            }
     DXT5:
         total_bits: 8
         decode: ({width, height, data}) ->
             # data should be a Uint8Array or Buffer, but we'll try converting
             # it to one anyway
             raw_frame = Uint8Array.from(data)
-            return dxt.decompress raw_frame,
-                width, height,
-                dxt.flags.DXT3
+            return {
+                data: dxt.decompress raw_frame,
+                    width, height,
+                    dxt.flags.DXT3
+                width: width
+                height: height
+            }
         encode: ({width, height, data}) ->
             raw_frame = Uint8Array.from(data)
-            return dxt.compress raw_frame,
-                width, height,
-                dxt.flags.DXT5
+            return {
+                data: dxt.compress raw_frame,
+                        width, height,
+                        dxt.flags.DXT5
+                width: width
+                height: height
+            }
     BGRX8888:
         total_bits: 32
     BGR565:
