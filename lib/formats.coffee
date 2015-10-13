@@ -14,11 +14,69 @@ jpg = require('jpeg-js')
     Uint8Array.from(data)
 ###
 
-exports.VTFImageFormats =
-    '-1':
-        name: 'NONE'
-    0:
-        name: 'RGBA8888'
+VTFImageFormats =
+    '-1': 'NONE'
+    0: 'RGBA8888'
+    1: 'ABGR8888'
+    2: 'RGB888'
+    3: 'BGR888'
+    4: 'RGB565'
+    5: 'I8'
+    6: 'IA88'
+    7: 'P8'
+    8: 'A8'
+    9: 'RGB888_BLUESCREEN'
+    10: 'BGR888_BLUESCREEN'
+    11: 'ARGB8888'
+    12: 'BGRA8888'
+    13: 'DXT1'
+    14: 'DXT3'
+    15: 'DXT5'
+    16: 'BGRX8888'
+    17: 'BGR565'
+    18: 'BGRX5551'
+    19: 'BGRA4444'
+    20: 'DXT1_ONEBITALPHA'
+    21: 'BGRA5551'
+    22: 'UV88'
+    23: 'UVWQ8888'
+    24: 'RGBA16161616F'
+    25: 'RGBA16161616'
+    26: 'UVLX8888'
+
+    NONE: -1
+    RGBA8888: 0
+    ABGR8888: 1
+    RGB888: 2
+    BGR888: 3
+    RGB565: 4
+    I8: 5
+    IA88: 6
+    P8: 7
+    A8: 8
+    RGB888_BLUESCREEN: 9
+    BGR888_BLUESCREEN: 10
+    ARGB8888: 11
+    BGRA8888: 12
+    DXT1: 13
+    DXT3: 14
+    DXT5: 15
+    BGRX8888: 16
+    BGR565: 17
+    BGRX5551: 18
+    BGRA4444: 19
+    DXT1_ONEBITALPHA: 20
+    BGRA5551: 21
+    UV88: 22
+    UVWQ8888: 23
+    RGBA16161616F: 24
+    RGBA16161616: 25
+    UVLX8888: 26
+
+exports.ImageFormats =
+    NONE: {}
+
+    RGBA8888:
         total_bits: 32
         encode: ({width, height, data}) ->
             return {
@@ -32,44 +90,31 @@ exports.VTFImageFormats =
                 height,
                 data
             }
-    1:
-        name: 'ABGR8888'
+    ABGR8888:
         total_bits: 32
-    2:
-        name: 'RGB888'
+    RGB888:
         total_bits: 24
-    3:
-        name: 'BGR888'
+    BGR888:
         total_bits: 24
-    4:
-        name: 'RGB565'
+    RGB565:
         total_bits: 16
-    5:
-        name: 'I8'
+    I8:
         total_bits: 8
-    6:
-        name: 'IA88'
+    IA88:
         total_bits: 16
-    7:
-        name: 'P8'
+    P8:
         total_bits: 8
-    8:
-        name: 'A8'
+    A8:
         total_bits: 8
-    9:
-        name: 'RGB888_BLUESCREEN'
+    RGB888_BLUESCREEN:
         total_bits: 24
-    10:
-        name: 'BGR888_BLUESCREEN'
+    BGR888_BLUESCREEN:
         total_bits: 24
-    11:
-        name: 'ARGB8888'
+    ARGB8888:
         total_bits: 32
-    12:
-        name: 'BGRA8888'
+    BGRA8888:
         total_bits: 32
-    13:
-        name: 'DXT1'
+    DXT1:
         total_bits: 4
         decode: ({width, height, data}) ->
             raw_frame = Uint8Array.from(data)
@@ -81,8 +126,7 @@ exports.VTFImageFormats =
             return dxt.compress raw_frame,
                 width, height,
                 dxt.flags.DXT1
-    14:
-        name: 'DXT3'
+    DXT3:
         total_bits: 8
         decode: ({width, height, data}) ->
             # data should be a Uint8Array or Buffer, but we'll try converting
@@ -96,8 +140,7 @@ exports.VTFImageFormats =
             return dxt.compress raw_frame,
                 width, height,
                 dxt.flags.DXT3
-    15:
-        name: 'DXT5'
+    DXT5:
         total_bits: 8
         decode: ({width, height, data}) ->
             # data should be a Uint8Array or Buffer, but we'll try converting
@@ -111,52 +154,35 @@ exports.VTFImageFormats =
             return dxt.compress raw_frame,
                 width, height,
                 dxt.flags.DXT5
-    16:
-        name: 'BGRX8888'
+    BGRX8888:
         total_bits: 32
-    17:
-        name: 'BGR565'
+    BGR565:
         total_bits: 16
-    18:
-        name: 'BGRX5551'
+    BGRX5551:
         total_bits: 16
-    19:
-        name: 'BGRA4444'
+    BGRA4444:
         total_bits: 16
-    20:
-        name: 'DXT1_ONEBITALPHA'
+    DXT1_ONEBITALPHA:
         total_bits: 4
-    21:
-        name: 'BGRA5551'
+    BGRA5551:
         total_bits: 16
-    22:
-        name: 'UV88'
+    UV88:
         total_bits: 16
-    23:
-        name: 'UVWQ8888'
+    UVWQ8888:
         total_bits: 32
-    24:
-        name: 'RGBA16161616F'
+    RGBA16161616F:
         total_bits: 64
-    25:
-        name: 'RGBA16161616'
+    RGBA16161616:
         total_bits: 64
-    26:
-        name: 'UVLX8888'
+    UVLX8888:
         total_bits: 32
 
-
-### All decoders return RBGA8888 data ####
-exports.GeneralImageFormats =
-    'jpg':
-        'decode': (file_data) ->
-            return jpg.decode(file_data)
-        'encode': ({width, height, data}, quality=100) ->
-            return jpg.encode({width, height, data}, quality)
-
-exports.ImageAliasMap =
-    ### The right hand side represents the GeneralImageFormats name ###
-    'jpeg': 'jpg'
+    ### --- Non raw formats --- ###
+    JPEG:
+        encode: ({data, width, height}) ->
+            return jpg.encode({data, width, height})
+        decode: ({data}) ->
+            return jpg.decode({data})
 
 
 exports.TextureFlags =

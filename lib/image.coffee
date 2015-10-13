@@ -4,7 +4,7 @@ struct = require('bufferpack')
 color = require('onecolor')
 
 formats = require('./formats.coffee')
-{VTFImageFormats, TextureFlags, GeneralImageFormats} = 'formats'
+{ImageFormats, TextureFlags} = 'formats'
 
 ## --- CoffeeScript getter and setter -----
 
@@ -79,13 +79,15 @@ class Image
             index += 4
         return data
 
-    @from: ({width, height, data: rgba_data}) ->
+    @from: ({width, height, data: rgba_data, format: null}) ->
         ### data must be rgba data of the form of a slice-supporting
             array that
         ###
         iterator = ->
             for start in [0...width*height*4] by 4
-                yield rgba_data[start...start + 4]
+                raw = rgba_data[start...start + 4]
+                if format?
+
         return new Image(width, height, iterator)
 
 class Frames
@@ -139,6 +141,17 @@ class MipMap
             mipmaps
         ###
         iterator = ->
+            end = 0
+            count = 0
+            sizes_iter = @sizes(width, height)
+            while count < no_mipmaps
+                {value: size, done} = sizes_iter.next()
+                start -= size * frames
+                if done
+                    break
+                raw = rgba_data[rgba_data.length+start...rgba_data.length+end]
+                yield Frames.from(raw)
+                end = start
 
     @from: (rgba_data, width, height, no_mipmaps=Infinity) ->
         ### Direction is whether mipmaps go from smallest to largest
